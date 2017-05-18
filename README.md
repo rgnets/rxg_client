@@ -1,5 +1,5 @@
 # rxg_client
-A simple CRUDE (Create, Read, Update, Delete, Execute) client to interface with the RXG's API
+A simple CRUDE (Create, Read, Update, Delete, Execute) client to interface with the rXg's API
 
 ## Install
 
