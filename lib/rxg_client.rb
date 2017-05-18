@@ -11,28 +11,21 @@ class RxgClient
     @request_format = requested_format
   end
 
-  def initialize(hostname, api_key, options = { })
-    # Valid options:
-    # :request_format   => :json or :xml
-    # :default_timeout  => timeout in seconds
-    # :raise_exceptions => true or false
-    # :verify_ssl       => true or false
+  def initialize(hostname, api_key, request_format: :json, default_timeout: 5, raise_exceptions: false, verify_ssl: false)
 
     self.api_key = api_key
     
-    self.request_format = options[:request_format] ? options[:request_format].to_sym : :json
+    self.request_format = request_format.to_sym
     self.class.format self.request_format
 
     self.hostname = hostname
     self.class.base_uri "https://#{self.hostname}/admin/scaffolds"
     
-    self.class.default_timeout options[:timeout] || 5
+    self.class.default_timeout default_timeout
 
-    self.raise_exceptions = options[:raise_exceptions] || false
+    self.raise_exceptions = raise_exceptions
 
-    if defined?(options[:verify_ssl])
-      self.class.default_options.update(verify: options[:verify_ssl])
-    end
+    self.class.default_options.update(verify: verify_ssl)
   end
 
   def auth
