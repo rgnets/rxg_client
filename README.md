@@ -17,13 +17,15 @@ gem install rxg_client
 
 ```ruby
 require 'rxg_client'
-options = { 
+# The following options can be configured when initializing the client:
+#  - default_timeout: the amount of time in seconds to wait for a response
+#  - raise_exceptions: true or false.  Default is false.
+#  - verify_ssl: true or false.  Default is false.  If using an IP, must be false.
+
+client = RxgClient.new("hostname.domain.com", "api_key", 
     default_timeout: 8, 
     raise_exceptions: true,
-    verify_ssl: false
-}
-
-client = RxgClient.new("hostname.domain.com", "api_key", options)
+    verify_ssl: true)
 
 
 
@@ -47,9 +49,37 @@ client.list(:wan_targets)
 # destroy a record
 client.destroy(:wan_targets, 14)
 => {success: true}
-# list a table
 
-client.list(:wan_targets)
-=> [  ]
+
+## EXECUTE
+# The “request” hash parameters
+# record_name - The “name” attribute of the desired record, if any. 
+#       -Not required if calling a class method or if record_id is present.
+#
+# record_id - The id of the desired record, if any. 
+#       -Not required if calling a class method or if record_name is present.
+#
+# method_name - The name of the desired class or instance method to be run against the model.
+#
+# method_args - A serialized Array or Hash of the argument(s) expected by the method.
+
+# execute an arbitrary class method, such as 
+# Uplink.last
+client.execute(:uplinks, {method_name: 'last'})
+=> {:id=>1, :interface_id=>1, :vlan_id=>nil, :ppp_id=>nil, :name=>"Uplink", 
+=> :dhcp=>true, :gateway_ip=>nil, :priority=>9, :download_bw=>65, 
+=> :download_bw_unit=>"Mbps", :upload_bw=>65, :upload_bw_unit=>"Mbps", 
+=> :online=>true, :weight=>1}
+
+# CustomEmailfind(20).send_including_admins(email, replacement_objs = [ ])
+client.execute(:custom_emails, {record_id: 20, method_name: 'send_including_admins', method_args: 'admin@mydomain.com'})
+=> "null" 
+# email is sent in background.  
+
+# execute an arbitrary instance method, such as
+# Account.find(1).quota
+client.execute(:accounts, {record_id: 1, method_name: 'quota'})
+=> "\"1000 MB / 1000 MB\""
+
 ```
 

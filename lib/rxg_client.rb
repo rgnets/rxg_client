@@ -90,18 +90,23 @@ class RxgClient
     response.success? ? self.parse(response.body) : raise(response.message)
   end
 
+  # executes an arbitrary method on given scaffold
+  # The "request" hash parameters:
+  #   record_name - The "name" attribute of the desired record, if any. Not required if calling a class method or if record_id is present.
+  #   record_id - The id of the desired record, if any. Not required if calling a class method or if record_name is present.
+  #   method_name - The name of the desired class or instance method to be run against the model.
+  #   method_args - A serialized Array or Hash of the argument(s) expected by the method.
+  # example method call:
+  #   node.execute("shared_credential_groups", {record_id: 7, method_name: "make_login_session", method_args:["192.168.20.111", "00:00:00:00:00:05", "test", 1]})
+  #
+  # reference the rXg's API documentation to determine available methods and required arguments
   def execute(table, request)
-    # executes an arbitrary method on given scaffold
-    # The "request" hash parameters:
-    #   record_name - The "name" attribute of the desired record, if any. Not required if calling a class method or if record_id is present.
-    #   record_id - The id of the desired record, if any. Not required if calling a class method or if record_name is present.
-    #   method_name - The name of the desired class or instance method to be run against the model.
-    #   method_args - A serialized Array or Hash of the argument(s) expected by the method.
-    # example method call:
-    #   node.execute("shared_credential_groups", {record_id: 7, method_name: "make_login_session", method_args:["192.168.20.111", "00:00:00:00:00:05", "test", 1]})
     response = self.class.post("/#{table}/execute.#{self.request_format}", {query: self.auth, body: {request: request}})
     response.success? ? self.parse(response.body) : raise(response.message)
   end
+
+
+
 
   private
 
