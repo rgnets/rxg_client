@@ -49,15 +49,15 @@ class RxgClient
     case auth_method
     when :headers # compatible with rXg version 11.442 or later
       if fleet
-        self.class.headers { 'fleetkey' => self.api_key }
+        self.class.headers({ 'fleetkey' => self.api_key })
       else
-        self.class.headers { 'api_key' => self.api_key }
+        self.class.headers({ 'api_key' => self.api_key })
       end
     when :query
       if fleet
-        self.class.headers { 'fleetkey' => self.api_key }
+        self.class.headers({ 'fleetkey' => self.api_key })
       else
-        self.class.default_params { 'api_key' => self.api_key }
+        self.class.default_params({ 'api_key' => self.api_key })
       end
     end
   end
@@ -157,12 +157,11 @@ class RxgClient
   end
 
   # The listed methods will be rescued from all StandardError exceptions, and the code within
-  # the block will be executed.  
+  # the block will be executed.
   rescue_from StandardError, :create, :list, :show, :update, :destroy, :execute, :search do |exception, instance|
     puts exception.message
 
     raise exception if instance.raise_exceptions
   end
 
-  
 end
