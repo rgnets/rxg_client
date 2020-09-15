@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name                  = 'rxg_client'
-  s.version               = '0.1.0'
-  s.date                  = '2017-05-18'
+  s.version               = '1.0.0'
+  s.date                  = '2020-09-15'
   s.summary               = "RXG API Client"
   s.description           = "A simple CRUDE (Create, Read, Update, Delete, Execute) client to interface with the rXg's API"
   s.authors               = ["Lannar Dean"]

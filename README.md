@@ -3,8 +3,13 @@ A simple CRUDE (Create, Read, Update, Delete, Execute) client to interface with 
 
 ## Install
 
+install the gem directly:
 ```
 gem install rxg_client
+```
+or include in your gemfile:
+```
+gem 'rxg_client'
 ```
 
 ## Requirements
@@ -17,13 +22,26 @@ gem install rxg_client
 
 ```ruby
 require 'rxg_client'
-# The following options can be configured when initializing the client:
-#  - default_timeout: the amount of time in seconds to wait for a response
-#  - raise_exceptions: true or false.  Default is false.
-#  - verify_ssl: true or false.  Default is false.  If using an IP, must be false.
 
-client = RxgClient.new("hostname.domain.com", "api_key", 
-    default_timeout: 8, 
+# The following options can be configured when initializing the client:
+#  - default_timeout: the amount of time in seconds to wait for a response.
+#      default is 5
+#  - raise_exceptions: true or false.
+#      default is true
+#  - verify_ssl: true or false.
+#      default is true
+#      If using an IP, must be false.
+#  - fleet: pass true if authentication should use the 'fleetkey' header
+#      instead of apikey.
+#      default is false
+#  - auth_method: must be one of: :headers, :query
+#      default is :headers
+#      If fleet is true, headers will always be used
+#  - debug: pass a logger or $stdout to have debug_output logged, or nil to disable.
+#      default is nil
+
+client = RxgClient.new("hostname.domain.com", "api_key",
+    default_timeout: 8,
     raise_exceptions: true,
     verify_ssl: true)
 
@@ -31,20 +49,24 @@ client = RxgClient.new("hostname.domain.com", "api_key",
 
 # create a record
 client.create(:wan_targets, {name: "my wan target", targets: "50.50.50.50"})
-=> {:id=>14, :name=>"my wan target", :targets=>"50.50.50.50", :note=>nil, :created_at=>"2017-05-17T17:22:43.500-04:00", :updated_at=>"2017-05-17T17:22:43.500-04:00", :created_by=>"api", :updated_by=>"api", :scratch=>nil} 
+=> {id: 14, name: "my wan target", targets: "50.50.50.50", note: nil, created_at: "2017-05-17T17:22:43.500-04:00", updated_at: "2017-05-17T17:22:43.500-04:00", created_by: "api", updated_by: "api", scratch: nil} 
 
 # show a record
 client.show(:wan_targets, 14)
-=> {:id=>14, :name=>"my wan target", :targets=>"50.50.50.50", :note=>nil, :created_at=>"2017-05-17T17:22:43.500-04:00", :updated_at=>"2017-05-17T17:22:43.500-04:00", :created_by=>"api", :updated_by=>"api", :scratch=>nil} 
+=> {id: 14, name: "my wan target", targets: "50.50.50.50", note: nil, created_at: "2017-05-17T17:22:43.500-04:00", updated_at: "2017-05-17T17:22:43.500-04:00", created_by: "api", updated_by: "api", scratch: nil} 
 
 
 # update a record
 client.update(:wan_targets, 14, {targets: "60.60.60.60"})
-=> {:id=>14, :name=>"my wan target", :targets=>"60.60.60.60", :note=>nil, :created_at=>"2017-05-17T17:22:43.500-04:00", :updated_at=>"2017-05-17T17:23:37.989-04:00", :created_by=>"api", :updated_by=>"api", :scratch=>nil} 
+=> {id: 14, name: "my wan target", targets: "60.60.60.60", note: nil, created_at: "2017-05-17T17:22:43.500-04:00", updated_at: "2017-05-17T17:23:37.989-04:00", created_by: "api", updated_by: "api", scratch: nil} 
 
 # list a table
 client.list(:wan_targets)
-=> [ {:id=>14, :name=>"my wan target", :targets=>"60.60.60.60", :note=>nil, :created_at=>"2017-05-17T17:22:43.500-04:00", :updated_at=>"2017-05-17T17:23:37.989-04:00", :created_by=>"api", :updated_by=>"api", :scratch=>nil} ]
+=> [ {id: 14, name: "my wan target", targets: "60.60.60.60", note: nil, created_at: "2017-05-17T17:22:43.500-04:00", updated_at: "2017-05-17T17:23:37.989-04:00", created_by: "api", updated_by: "api", scratch: nil} ]
+
+# search a table for a record matching the provided hash of attributes
+client.search(:accounts, { last_name: 'Smith' })
+=> [ {id: 10, login: 'asmith', first_name: 'Alex', last_name: 'Smith', email: 'asmith@school.edu', [...]} ]
 
 # destroy a record
 client.destroy(:wan_targets, 14)
@@ -66,10 +88,10 @@ client.destroy(:wan_targets, 14)
 # execute an arbitrary class method, such as 
 # Uplink.last
 client.execute(:uplinks, {method_name: 'last'})
-=> {:id=>1, :interface_id=>1, :vlan_id=>nil, :ppp_id=>nil, :name=>"Uplink", 
-=> :dhcp=>true, :gateway_ip=>nil, :priority=>9, :download_bw=>65, 
-=> :download_bw_unit=>"Mbps", :upload_bw=>65, :upload_bw_unit=>"Mbps", 
-=> :online=>true, :weight=>1}
+=> {id: 1, interface_id: 1, vlan_id: nil, ppp_id: nil, name: "Uplink", 
+=> dhcp: true, gateway_ip: nil, priority: 9, download_bw: 65, 
+=> download_bw_unit: "Mbps", upload_bw: 65, upload_bw_unit: "Mbps", 
+=> online: true, weight: 1}
 
 # CustomEmailfind(20).send_including_admins(email, replacement_objs = [ ])
 client.execute(:custom_emails, {record_id: 20, method_name: 'send_including_admins', method_args: 'admin@mydomain.com'})
