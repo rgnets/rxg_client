@@ -3,7 +3,8 @@ class RxgClient
 
   include HTTParty
 
-  attr_accessor :api_key, :hostname, :request_format, :raise_exceptions, :auth
+  attr_accessor :api_key, :hostname, :base_uri, :fleet, :request_format,
+    :raise_exceptions, :verify_ssl, :auth_method, :default_timeout, :debug_output,
 
   def request_format= (requested_format)
     raise HTTParty::UnsupportedFormat unless [ :json, :xml ].include?(requested_format.to_sym)
@@ -26,41 +27,100 @@ class RxgClient
   #      If fleet is true, headers will always be used
   #  - debug: pass a logger or $stdout to have debug_output logged, or nil to disable.
   #      default is nil
+  #  - base_uri: provide an alternative base_uri, either a full URL or just the
+  #      path to append to the hostname.
+  #      default uses the admin/scaffolds context to access the traditional API
   def initialize(hostname, api_key, request_format: :json, default_timeout: 5,
-    raise_exceptions: false, verify_ssl: false, fleet: false, debug: nil,
-    auth_method: :headers)
+    raise_exceptions: false, verify_ssl: false, fleet: false, debug_output: nil,
+    base_uri: 'admin/scaffolds', auth_method: :headers)
 
     self.api_key = api_key
 
-    self.request_format = request_format.to_sym
-    self.class.format self.request_format
-
     self.hostname = hostname
-    self.class.base_uri "https://#{self.hostname}/admin/scaffolds"
 
-    self.class.default_timeout default_timeout
+    self.set_base_uri(base_uri)
+
+    self.fleet = fleet
+
+    self.default_timeout = default_timeout
 
     self.raise_exceptions = raise_exceptions
 
-    self.class.default_options.update(verify: verify_ssl)
+    self.verify_ssl = verify_ssl
 
-    self.class.debug_output debug
+    self.debug_output = debug
 
-    case auth_method
-    when :headers # compatible with rXg version 11.442 or later
-      if fleet
-        self.class.headers({ 'fleetkey' => self.api_key })
-      else
-        self.class.headers({ 'api_key' => self.api_key })
-      end
-    when :query
-      if fleet
-        self.class.headers({ 'fleetkey' => self.api_key })
-      else
-        self.class.default_params({ 'api_key' => self.api_key })
+    self.request_format = request_format.to_sym
+
+    self.auth_method = auth_method
+
+  end
+
+
+  # change the active base_uri
+  def set_base_uri(base_uri)
+    if base_uri =~ /^https?:\/\//
+      self.base_uri = base_uri
+    else
+      self.base_uri = "https://#{self.hostname}/#{base_uri.delete_prefix('/')}"
+    end
+  end
+
+  # temporarily change the base_uri for the duration of the provided block, then
+  # change it back to its previous value
+  def with_base_uri(new_base_uri, &blk)
+    if block_given?
+      begin
+        old_uri = self.base_uri
+
+        set_base_uri(new_base_uri)
+
+        blk.call
+      ensure
+        set_base_uri(old_uri)
       end
     end
   end
+
+
+
+  def default_header
+    @headers ||= begin
+      h = { 'Accept' => "application/#{self.request_format}" }
+      if self.fleet
+        h['fleetkey'] = self.api_key
+      elsif self.auth_method == :headers # compatible with rXg version 11.442 or later
+        h['apikey'] = self.api_key
+      end
+      h
+    end
+  end
+
+  def default_query
+    case self.auth_method
+    when :query
+      { api_key: self.api_key }
+    when :headers
+      { }
+    end
+  end
+
+  %i(post get put patch delete).each do |http_method|
+    define_method(http_method) do |action, **args|
+      puts "/#{action.delete_prefix('/')}"
+      default_args = {
+        :headers      => self.default_header.merge(args.delete(:headers) || {}),
+        :query        => self.default_query.merge(args.delete(:query) || {}).presence,
+        :base_uri     => self.base_uri,
+        :timeout      => self.default_timeout,
+        :format       => self.request_format,
+        :debug_output => self.debug_output
+      }
+      response = self.class.send(http_method, "/#{action.delete_prefix('/')}", **default_args.merge(args))
+      response.success? ? self.parse(response.body) : raise(response.message)
+    end
+  end
+
 
   def parse(body)
     return {success: true} if body == ""
@@ -92,37 +152,31 @@ class RxgClient
 
   # create a record in the given table with the attributes provided in new_record
   def create(table, new_record)
-    response = self.class.post("/#{table}/create/index.#{self.request_format}", body: {record: new_record})
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.post("/#{table}/create", body: {record: new_record})
   end
 
   # list all records from the given table
   def list(table)
-    response = self.class.get("/#{table}/index.#{self.request_format}")
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.get("/#{table}")
   end
 
   def search(table, search_params)
-    response = self.class.post("/#{table}/index.#{self.request_format}", body: search_params)
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.post("/#{table}/index", body: search_params)
   end
 
   # return the record from the given table having the given id
   def show(table, id)
-    response = self.class.get("/#{table}/show/#{id}.#{self.request_format}")
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.get("/#{table}/show/#{id}")
   end
 
   # update a record from the given table, having the given id, with the updated attributes provided in updated_record_hash
   def update(table, id, updated_record_hash)
-    response = self.class.post("/#{table}/update/#{id}.#{self.request_format}", body: {record: updated_record_hash})
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.post("/#{table}/update/#{id}", body: {record: updated_record_hash})
   end
 
   # destroy a record from the given table having the given id
   def destroy(table, id)
-    response = self.class.post("/#{table}/destroy/#{id}.#{self.request_format}")
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.post("/#{table}/destroy/#{id}")
   end
 
   def execute(table, request)
@@ -134,8 +188,7 @@ class RxgClient
     #   method_args - A serialized Array or Hash of the argument(s) expected by the method.
     # example method call:
     #   node.execute("shared_credential_groups", {record_id: 7, method_name: "make_login_session", method_args:["192.168.20.111", "00:00:00:00:00:05", "test", 1]})
-    response = self.class.post("/#{table}/execute.#{self.request_format}", body: {request: request})
-    response.success? ? self.parse(response.body) : raise(response.message)
+    self.post("/#{table}/execute", body: {request: request})
   end
 
   private
