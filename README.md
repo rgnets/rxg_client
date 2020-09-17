@@ -23,7 +23,8 @@ gem 'rxg_client'
 ```ruby
 require 'rxg_client'
 
-# The following options can be configured when initializing the client:
+# In addition to the required host and api_key arguments, the following options
+# can be configured when initializing the client:
 #  - default_timeout: the amount of time in seconds to wait for a response.
 #      default is 5
 #  - raise_exceptions: true or false.
@@ -39,6 +40,9 @@ require 'rxg_client'
 #      If fleet is true, headers will always be used
 #  - debug: pass a logger or $stdout to have debug_output logged, or nil to disable.
 #      default is nil
+#  - base_uri: provide an alternative base_uri, either a full URL or just the
+#      path to append to the hostname.
+#      default uses the admin/scaffolds context to access the traditional API
 
 client = RxgClient.new("hostname.domain.com", "api_key",
     default_timeout: 8,
