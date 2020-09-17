@@ -4,7 +4,7 @@ class RxgClient
   include HTTParty
 
   attr_accessor :api_key, :hostname, :base_uri, :fleet, :request_format,
-    :raise_exceptions, :verify_ssl, :auth_method, :default_timeout, :debug_output,
+    :raise_exceptions, :verify_ssl, :auth_method, :default_timeout, :debug_output
 
   def request_format= (requested_format)
     raise HTTParty::UnsupportedFormat unless [ :json, :xml ].include?(requested_format.to_sym)
@@ -48,7 +48,7 @@ class RxgClient
 
     self.verify_ssl = verify_ssl
 
-    self.debug_output = debug
+    self.debug_output = debug_output
 
     self.request_format = request_format.to_sym
 
@@ -107,7 +107,7 @@ class RxgClient
 
   %i(post get put patch delete).each do |http_method|
     define_method(http_method) do |action, **args|
-      puts "/#{action.delete_prefix('/')}"
+      action = "/#{action.to_s.delete_prefix('/')}"
       default_args = {
         :headers      => self.default_header.merge(args.delete(:headers) || {}),
         :query        => self.default_query.merge(args.delete(:query) || {}).presence,
@@ -116,7 +116,7 @@ class RxgClient
         :format       => self.request_format,
         :debug_output => self.debug_output
       }
-      response = self.class.send(http_method, "/#{action.delete_prefix('/')}", **default_args.merge(args))
+      response = self.class.send(http_method, action, **default_args.merge(args))
       response.success? ? self.parse(response.body) : raise(response.message)
     end
   end
