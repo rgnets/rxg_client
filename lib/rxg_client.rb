@@ -114,7 +114,8 @@ class RxgClient
         :base_uri     => self.base_uri,
         :timeout      => self.default_timeout,
         :format       => self.request_format,
-        :debug_output => self.debug_output
+        :debug_output => self.debug_output,
+        :verify       => self.verify_ssl
       }
       response = self.class.send(http_method, action, **default_args.merge(args))
       response.success? ? self.parse(response.body) : raise(response.message)
