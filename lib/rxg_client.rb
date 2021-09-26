@@ -4,7 +4,8 @@ class RxgClient
   include HTTParty
 
   attr_accessor :api_key, :hostname, :base_uri, :fleet, :request_format,
-    :raise_exceptions, :verify_ssl, :auth_method, :default_timeout, :debug_output
+    :raise_exceptions, :verify_ssl, :auth_method, :default_timeout, :debug_output,
+    :response_headers
 
   def request_format= (requested_format)
     raise HTTParty::UnsupportedFormat unless [ :json, :xml ].include?(requested_format.to_sym)
@@ -117,8 +118,14 @@ class RxgClient
         :debug_output => self.debug_output,
         :verify       => self.verify_ssl
       }
+      self.response_headers = nil
       response = self.class.send(http_method, action, **default_args.merge(args))
-      response.success? ? self.parse(response.body) : raise(response.message)
+      if response.success?
+        self.response_headers = response.headers
+        self.parse(response.body)
+      else
+        raise(response.message)
+      end
     end
   end
 
