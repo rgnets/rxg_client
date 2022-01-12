@@ -1,3 +1,8 @@
+## 1.1.5
+
+Raise RxgError instead of StandardError on an unsuccessful API request, and
+store the response_body in the exception instance
+
 ## 1.1.4
 
 Reset response_headers before each request to avoid getting old data
